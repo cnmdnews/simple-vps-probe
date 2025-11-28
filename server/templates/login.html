@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统登录 - 数字监控中心</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #0a0e17; /* 深空蓝背景 */
+            background-image: radial-gradient(circle at center, #1a2438 0%, #0a0e17 100%);
+            font-family: 'Segoe UI', Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #e0e6ed;
+        }
+        .login-container {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.3); /* 蓝色光晕 */
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+        h2 {
+            margin-bottom: 30px;
+            color: #3498db;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid #2c3e50;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        .alert {
+            padding: 10px;
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>ACCESS CONTROL</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <input type="text" name="username" placeholder="用户名" required autocomplete="off">
+            <input type="password" name="password" placeholder="密码" required>
+            <button type="submit">登 录系统</button>
+        </form>
+    </div>
+</body>
+</html>
