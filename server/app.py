@@ -36,7 +36,6 @@ def load_user(user_id):
 servers_status = {}
 
 @app.route('/')
-@login_required
 def index():
     return render_template('index.html', user=current_user)
 
