@@ -95,7 +95,6 @@ def report():
     return jsonify({"status": "success"})
 
 @app.route('/api/stats')
-@login_required
 def stats():
     now = time.time()
     response_data = {}
