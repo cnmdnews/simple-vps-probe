@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数字化监控面板</title>
+    <title>数字化监控面板 v2.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-color: #0a0e17;
@@ -17,46 +18,26 @@
         }
         body {
             margin: 0;
-            font-family: 'Segoe UI', Roboto, monospace; /* 使用等宽字体增加数字感 */
+            font-family: 'Segoe UI', Roboto, monospace;
             background-color: var(--bg-color);
             background-image: 
                 linear-gradient(rgba(52, 152, 219, 0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(52, 152, 219, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px; /* 网格背景 */
+            background-size: 30px 30px;
             color: var(--text-primary);
+            overflow-x: hidden;
         }
 
         /* 导航栏 */
         .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background: rgba(15, 23, 42, 0.9);
-            border-bottom: 1px solid rgba(52, 152, 219, 0.3);
-            backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 30px; background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(52, 152, 219, 0.3); backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 100;
         }
-        .brand {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent-blue);
-            letter-spacing: 2px;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .user-name { color: var(--accent-green); }
-        .btn-logout {
-            padding: 8px 15px;
-            border: 1px solid var(--accent-red);
-            color: var(--accent-red);
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
+        .brand { font-size: 1.5rem; font-weight: bold; color: var(--accent-blue); letter-spacing: 2px; }
+        .user-info { display: flex; align-items: center; gap: 20px; }
+        .btn-logout { padding: 8px 15px; border: 1px solid var(--accent-red); color: var(--accent-red); text-decoration: none; border-radius: 4px; font-size: 14px; transition: all 0.3s; }
         .btn-logout:hover { background: var(--accent-red); color: white; }
 
         /* 主内容区 */
@@ -65,149 +46,237 @@
 
         /* 卡片样式 */
         .card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 12px;
+            background: var(--card-bg); padding: 25px; border-radius: 12px;
             border: 1px solid rgba(148, 163, 184, 0.1);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(5px);
-            transition: transform 0.3s, border-color 0.3s;
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+            position: relative; overflow: hidden;
+            cursor: pointer; /* 鼠标变手型 */
         }
-        .card::before { /* 顶部光条效果 */
+        .card::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-            background: linear-gradient(90deg, var(--accent-blue), transparent);
-            opacity: 0.5;
+            background: linear-gradient(90deg, var(--accent-blue), transparent); opacity: 0.5;
         }
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-blue);
-        }
-        .card.offline-card { border-color: var(--accent-red); opacity: 0.8; }
+        .card:hover { transform: translateY(-5px); border-color: var(--accent-blue); box-shadow: 0 10px 20px rgba(52, 152, 219, 0.2); }
+        .card.offline-card { border-color: var(--accent-red); opacity: 0.8; cursor: default; }
         .card.offline-card::before { background: var(--accent-red); }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .hostname { font-size: 1.3rem; font-weight: bold; letter-spacing: 1px; }
-        
-        /* 状态指示灯 */
-        .status-indicator {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
+        .status-indicator { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
         .status-online { background: rgba(46, 204, 113, 0.2); color: var(--accent-green); box-shadow: 0 0 10px rgba(46, 204, 113, 0.3); }
         .status-offline { background: rgba(231, 76, 60, 0.2); color: var(--accent-red); box-shadow: 0 0 10px rgba(231, 76, 60, 0.3); }
 
-        /* 数据条样式 */
-        .stat-row { margin-bottom: 18px; }
-        .stat-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary); }
-        .stat-value { font-weight: bold; color: var(--text-primary); font-family: monospace; }
+        .stat-row { margin-bottom: 12px; }
+        .stat-info { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-secondary); }
+        .progress-bg { height: 8px; background: rgba(0, 0, 0, 0.3); border-radius: 4px; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
         
-        .progress-bg {
-            height: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 5px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        .click-hint { font-size: 0.75rem; text-align: center; color: var(--text-secondary); margin-top: 15px; opacity: 0.5; }
+
+        /* ====== 模态框 (详情页) 样式 ====== */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+            z-index: 1000; justify-content: center; align-items: center;
         }
-        .progress-bar {
-            height: 100%;
-            border-radius: 5px;
-            transition: width 0.8s ease-in-out;
-            /* 添加条纹和发光动画 */
-            background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
-            background-size: 20px 20px;
-            animation: move-stripes 2s linear infinite;
+        .modal-content {
+            background: #1e293b; width: 90%; max-width: 1000px; height: 90vh;
+            border-radius: 15px; border: 1px solid var(--accent-blue);
+            box-shadow: 0 0 50px rgba(52, 152, 219, 0.2);
+            padding: 30px; display: flex; flex-direction: column;
+            overflow-y: auto;
         }
-        @keyframes move-stripes { from { background-position: 0 0; } to { background-position: 40px 0; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        .modal-title { font-size: 1.8rem; color: var(--accent-blue); }
+        .close-btn { background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer; }
+        .close-btn:hover { color: var(--accent-red); }
+        
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; flex: 1; }
+        .chart-box { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 10px; border: 1px solid #334155; height: 300px; position: relative; }
+        .chart-box h4 { margin: 0 0 10px 0; color: var(--text-secondary); text-align: center; }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="brand">⚡ DIGITAL MONITOR HUB</div>
         <div class="user-info">
-            <span>OPERATOR: <span class="user-name">{{ user.id }}</span></span>
+            <span>OPERATOR: {{ user.id }}</span>
             <a href="{{ url_for('logout') }}" class="btn-logout">安全登出</a>
         </div>
     </nav>
 
     <div class="container">
         <div id="server-list" class="grid">
-            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-secondary);">
-                正在建立卫星连接...
+            <div style="text-align: center; color: var(--text-secondary); grid-column: 1/-1; padding: 50px;">正在搜索信号...</div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Server Details</div>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h4>CPU 使用率 (%)</h4>
+                    <canvas id="cpuChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>内存 使用率 (%)</h4>
+                    <canvas id="ramChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>硬盘 使用率 (%)</h4>
+                    <canvas id="diskChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        let currentDetailServer = null; // 当前正在查看详情的服务器名
+        let charts = {}; // 存储 Chart 实例
+        let globalData = {}; // 存储所有数据
+
+        function initCharts() {
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 }, // 关闭更新时的整体重绘动画，保留平滑效果
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                    y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } }
+                },
+                elements: {
+                    line: { tension: 0.4, borderWidth: 2, fill: true }, // 平滑曲线
+                    point: { radius: 0, hitRadius: 10 }
+                },
+                plugins: { legend: { display: false } }
+            };
+
+            const createChart = (ctx, color, bgColor) => {
+                return new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: [], datasets: [{ data: [], borderColor: color, backgroundColor: bgColor }] },
+                    options: commonOptions
+                });
+            };
+
+            charts.cpu = createChart(document.getElementById('cpuChart'), '#3498db', 'rgba(52, 152, 219, 0.2)');
+            charts.ram = createChart(document.getElementById('ramChart'), '#9b59b6', 'rgba(155, 89, 182, 0.2)');
+            charts.disk = createChart(document.getElementById('diskChart'), '#f1c40f', 'rgba(241, 196, 15, 0.2)');
+        }
+
+        function openModal(serverName) {
+            currentDetailServer = serverName;
+            document.getElementById('modalTitle').innerText = `📡 ${serverName} - 实时监控`;
+            document.getElementById('detailModal').style.display = 'flex';
+            if (!charts.cpu) initCharts(); // 初始化图表
+            updateCharts(); // 立即渲染一次
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+            currentDetailServer = null;
+        }
+
+        function updateCharts() {
+            if (!currentDetailServer || !globalData[currentDetailServer]) return;
+            
+            const history = globalData[currentDetailServer].history || [];
+            const labels = history.map(h => h.time);
+            const cpuData = history.map(h => h.cpu);
+            const ramData = history.map(h => h.ram);
+            const diskData = history.map(h => h.disk);
+
+            const updateSingleChart = (chart, labels, data) => {
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = data;
+                chart.update();
+            };
+
+            updateSingleChart(charts.cpu, labels, cpuData);
+            updateSingleChart(charts.ram, labels, ramData);
+            updateSingleChart(charts.disk, labels, diskData);
+        }
+
         function getColor(value) {
-            if (value < 60) return 'var(--accent-blue)';
-            if (value < 85) return 'var(--accent-yellow)';
-            return 'var(--accent-red)';
+            if (value < 60) return '#3498db';
+            if (value < 85) return '#f1c40f';
+            return '#e74c3c';
         }
 
         function updateStats() {
             fetch('/api/stats')
-                .then(r => {
-                    if (r.status === 401) window.location.reload(); // 如果未登录，刷新跳转
-                    return r.json();
-                })
+                .then(r => { if (r.status === 401) location.reload(); return r.json(); })
                 .then(data => {
+                    globalData = data; // 保存全局数据供弹窗使用
                     const list = document.getElementById('server-list');
+
+                    // 如果弹窗开着，更新图表
+                    if (currentDetailServer) updateCharts();
+
                     if (Object.keys(data).length === 0) {
-                        list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-secondary);">暂无在线节点</div>';
+                        list.innerHTML = '<div style="color:#aaa;text-align:center;grid-column:1/-1;padding:50px">暂无在线节点</div>';
                         return;
                     }
-                    list.innerHTML = '';
+
+                    // 渲染卡片列表 (这里我们尽量复用 DOM 以免闪烁，简化起见先重绘)
+                    // 为了性能，实际生产中应该比较 DOM，但这里为了代码简洁直接重绘
+                    // 注意：为了不影响正在查看的弹窗，我们只更新列表，不重新生成整个页面
+                    
+                    // 构建 HTML
+                    let html = '';
                     for (const [name, s] of Object.entries(data)) {
                         const isOffline = s.status === 'offline';
-                        const statusHtml = isOffline ? 
-                            '<span class="status-indicator status-offline">OFFLINE - 信号丢失</span>' : 
-                            '<span class="status-indicator status-online">ONLINE - 运行中</span>';
+                        const cpuVal = isOffline ? 0 : s.cpu.toFixed(1);
+                        const ramVal = isOffline ? 0 : s.ram.toFixed(1);
                         
-                        // 离线数据处理显示
-                        const cpuVal = isOffline ? s.cpu : s.cpu.toFixed(1);
-                        const ramVal = isOffline ? s.ram : s.ram.toFixed(1);
-                        const diskVal = isOffline ? s.disk : s.disk.toFixed(1);
+                        // 离线状态处理
+                        const statusBadge = isOffline ? 
+                            `<span class="status-indicator status-offline">离线</span>` : 
+                            `<span class="status-indicator status-online">运行中</span>`;
+                        
+                        const clickAction = isOffline ? '' : `onclick="openModal('${name}')"`;
 
-                        list.innerHTML += `
-                            <div class="card ${isOffline ? 'offline-card' : ''}">
+                        html += `
+                            <div class="card ${isOffline ? 'offline-card' : ''}" ${clickAction}>
                                 <div class="header">
-                                    <div class="hostname">Host: ${name}</div>
-                                    ${statusHtml}
+                                    <div class="hostname">${name}</div>
+                                    ${statusBadge}
                                 </div>
-                                
                                 <div class="stat-row">
-                                    <div class="stat-info"><span>CPU Load</span><span class="stat-value">${cpuVal}%</span></div>
-                                    <div class="progress-bg">
-                                        <div class="progress-bar" style="width:${s.cpu}%; background-color:${getColor(s.cpu)}; box-shadow: 0 0 10px ${getColor(s.cpu)}"></div>
-                                    </div>
+                                    <div class="stat-info"><span>CPU</span><span>${cpuVal}%</span></div>
+                                    <div class="progress-bg"><div class="progress-bar" style="width:${s.cpu}%; background:${getColor(s.cpu)}"></div></div>
                                 </div>
-                                
                                 <div class="stat-row">
-                                    <div class="stat-info"><span>RAM Usage</span><span class="stat-value">${ramVal}%</span></div>
-                                    <div class="progress-bg">
-                                        <div class="progress-bar" style="width:${s.ram}%; background-color:${getColor(s.ram)}; box-shadow: 0 0 10px ${getColor(s.ram)}"></div>
-                                    </div>
+                                    <div class="stat-info"><span>内存</span><span>${ramVal}%</span></div>
+                                    <div class="progress-bg"><div class="progress-bar" style="width:${s.ram}%; background:${getColor(s.ram)}"></div></div>
                                 </div>
-                                
-                                <div class="stat-row">
-                                    <div class="stat-info"><span>Disk Space</span><span class="stat-value">${diskVal}%</span></div>
-                                    <div class="progress-bg">
-                                        <div class="progress-bar" style="width:${s.disk}%; background: var(--accent-blue);"></div>
-                                    </div>
-                                </div>
-                            </div>`;
+                                <div class="click-hint">${isOffline ? '无法连接' : '👆 点击查看历史图表'}</div>
+                            </div>
+                        `;
                     }
-                })
-                .catch(err => console.error("数据流中断:", err));
+                    // 只有当服务器列表数量发生变化，或者初次加载时才清空 innerHTML (防止滚动条跳动)
+                    // 简化版：直接替换
+                    if (list.innerHTML !== html && !document.querySelector('.card:hover')) {
+                        list.innerHTML = html;
+                    } else if (list.innerHTML === '') {
+                        list.innerHTML = html;
+                    }
+                });
         }
-        // 首次加载和定时刷新
+
+        setInterval(updateStats, 2000);
         updateStats();
-        setInterval(updateStats, 3000);
+
+        // 点击遮罩关闭
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('detailModal')) closeModal();
+        });
     </script>
 </body>
 </html>
