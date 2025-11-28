@@ -2,6 +2,12 @@
 
 这是一个基于 Python Flask 和 Psutil 开发的轻量级服务器监控探针。
 
+监控端一键脚本：
+wget -O install.sh https://raw.githubusercontent.com/cnmdnews/simple-vps-probe/main/install.sh && chmod +x install.sh && bash install.sh
+
+被控端一键脚本：
+wget -O agent.sh https://raw.githubusercontent.com/cnmdnews/simple-vps-probe/main/install_agent.sh && chmod +x agent.sh && bash agent.sh
+
 ## 功能
 - 实时监控 CPU、内存、硬盘使用率
 - 简单的 Web 面板展示
