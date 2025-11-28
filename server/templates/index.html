@@ -102,8 +102,13 @@
     <nav class="navbar">
         <div class="brand">⚡ DIGITAL MONITOR HUB</div>
         <div class="user-info">
-            <span>OPERATOR: {{ user.id }}</span>
-            <a href="{{ url_for('logout') }}" class="btn-logout">安全登出</a>
+            {% if current_user.is_authenticated %}
+                <span style="color: var(--accent-green);">OPERATOR: {{ current_user.id }}</span>
+                <a href="{{ url_for('logout') }}" class="btn-logout">安全登出</a>
+            {% else %}
+                <span style="color: var(--text-secondary);">访客模式 (Read Only)</span>
+                <a href="{{ url_for('login') }}" class="btn-logout" style="border-color: var(--accent-blue); color: var(--accent-blue);">管理员登录</a>
+            {% endif %}
         </div>
     </nav>
 
