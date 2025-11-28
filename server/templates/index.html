@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>简易 VPS 探针</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .offline { color: red; }
+        .online { color: green; }
+    </style>
+</head>
+<body>
+    <h1>服务器监控面板</h1>
+    <div id="server-list">加载中...</div>
+
+    <script>
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('server-list');
+                    list.innerHTML = '';
+                    for (const [name, stats] of Object.entries(data)) {
+                        const isOffline = stats.status === 'offline';
+                        const html = `
+                            <div class="card">
+                                <h3>${name} <span class="${isOffline ? 'offline' : 'online'}">●</span></h3>
+                                <p>CPU: ${stats.cpu}%</p>
+                                <p>内存: ${stats.ram}%</p>
+                                <p>硬盘: ${stats.disk}%</p>
+                            </div>
+                        `;
+                        list.innerHTML += html;
+                    }
+                });
+        }
+        setInterval(updateStats, 2000); // 每2秒刷新一次
+        updateStats();
+    </script>
+</body>
+</html>
