@@ -2,41 +2,212 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>简易 VPS 探针</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字化监控面板</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
-        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .offline { color: red; }
-        .online { color: green; }
+        :root {
+            --bg-color: #0a0e17;
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --text-primary: #e0e6ed;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3498db;
+            --accent-green: #2ecc71;
+            --accent-red: #e74c3c;
+            --accent-yellow: #f1c40f;
+        }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, monospace; /* 使用等宽字体增加数字感 */
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(52, 152, 219, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(52, 152, 219, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px; /* 网格背景 */
+            color: var(--text-primary);
+        }
+
+        /* 导航栏 */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(52, 152, 219, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        .brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-blue);
+            letter-spacing: 2px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .user-name { color: var(--accent-green); }
+        .btn-logout {
+            padding: 8px 15px;
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-logout:hover { background: var(--accent-red); color: white; }
+
+        /* 主内容区 */
+        .container { padding: 30px; max-width: 1400px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
+
+        /* 卡片样式 */
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before { /* 顶部光条效果 */
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), transparent);
+            opacity: 0.5;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-blue);
+        }
+        .card.offline-card { border-color: var(--accent-red); opacity: 0.8; }
+        .card.offline-card::before { background: var(--accent-red); }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .hostname { font-size: 1.3rem; font-weight: bold; letter-spacing: 1px; }
+        
+        /* 状态指示灯 */
+        .status-indicator {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-online { background: rgba(46, 204, 113, 0.2); color: var(--accent-green); box-shadow: 0 0 10px rgba(46, 204, 113, 0.3); }
+        .status-offline { background: rgba(231, 76, 60, 0.2); color: var(--accent-red); box-shadow: 0 0 10px rgba(231, 76, 60, 0.3); }
+
+        /* 数据条样式 */
+        .stat-row { margin-bottom: 18px; }
+        .stat-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary); }
+        .stat-value { font-weight: bold; color: var(--text-primary); font-family: monospace; }
+        
+        .progress-bg {
+            height: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.8s ease-in-out;
+            /* 添加条纹和发光动画 */
+            background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+            animation: move-stripes 2s linear infinite;
+        }
+        @keyframes move-stripes { from { background-position: 0 0; } to { background-position: 40px 0; } }
     </style>
 </head>
 <body>
-    <h1>服务器监控面板</h1>
-    <div id="server-list">加载中...</div>
+    <nav class="navbar">
+        <div class="brand">⚡ DIGITAL MONITOR HUB</div>
+        <div class="user-info">
+            <span>OPERATOR: <span class="user-name">{{ user.id }}</span></span>
+            <a href="{{ url_for('logout') }}" class="btn-logout">安全登出</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="server-list" class="grid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-secondary);">
+                正在建立卫星连接...
+            </div>
+        </div>
+    </div>
 
     <script>
+        function getColor(value) {
+            if (value < 60) return 'var(--accent-blue)';
+            if (value < 85) return 'var(--accent-yellow)';
+            return 'var(--accent-red)';
+        }
+
         function updateStats() {
             fetch('/api/stats')
-                .then(response => response.json())
+                .then(r => {
+                    if (r.status === 401) window.location.reload(); // 如果未登录，刷新跳转
+                    return r.json();
+                })
                 .then(data => {
                     const list = document.getElementById('server-list');
-                    list.innerHTML = '';
-                    for (const [name, stats] of Object.entries(data)) {
-                        const isOffline = stats.status === 'offline';
-                        const html = `
-                            <div class="card">
-                                <h3>${name} <span class="${isOffline ? 'offline' : 'online'}">●</span></h3>
-                                <p>CPU: ${stats.cpu}%</p>
-                                <p>内存: ${stats.ram}%</p>
-                                <p>硬盘: ${stats.disk}%</p>
-                            </div>
-                        `;
-                        list.innerHTML += html;
+                    if (Object.keys(data).length === 0) {
+                        list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-secondary);">暂无在线节点</div>';
+                        return;
                     }
-                });
+                    list.innerHTML = '';
+                    for (const [name, s] of Object.entries(data)) {
+                        const isOffline = s.status === 'offline';
+                        const statusHtml = isOffline ? 
+                            '<span class="status-indicator status-offline">OFFLINE - 信号丢失</span>' : 
+                            '<span class="status-indicator status-online">ONLINE - 运行中</span>';
+                        
+                        // 离线数据处理显示
+                        const cpuVal = isOffline ? s.cpu : s.cpu.toFixed(1);
+                        const ramVal = isOffline ? s.ram : s.ram.toFixed(1);
+                        const diskVal = isOffline ? s.disk : s.disk.toFixed(1);
+
+                        list.innerHTML += `
+                            <div class="card ${isOffline ? 'offline-card' : ''}">
+                                <div class="header">
+                                    <div class="hostname">Host: ${name}</div>
+                                    ${statusHtml}
+                                </div>
+                                
+                                <div class="stat-row">
+                                    <div class="stat-info"><span>CPU Load</span><span class="stat-value">${cpuVal}%</span></div>
+                                    <div class="progress-bg">
+                                        <div class="progress-bar" style="width:${s.cpu}%; background-color:${getColor(s.cpu)}; box-shadow: 0 0 10px ${getColor(s.cpu)}"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-row">
+                                    <div class="stat-info"><span>RAM Usage</span><span class="stat-value">${ramVal}%</span></div>
+                                    <div class="progress-bg">
+                                        <div class="progress-bar" style="width:${s.ram}%; background-color:${getColor(s.ram)}; box-shadow: 0 0 10px ${getColor(s.ram)}"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-row">
+                                    <div class="stat-info"><span>Disk Space</span><span class="stat-value">${diskVal}%</span></div>
+                                    <div class="progress-bg">
+                                        <div class="progress-bar" style="width:${s.disk}%; background: var(--accent-blue);"></div>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+                })
+                .catch(err => console.error("数据流中断:", err));
         }
-        setInterval(updateStats, 2000); // 每2秒刷新一次
+        // 首次加载和定时刷新
         updateStats();
+        setInterval(updateStats, 3000);
     </script>
 </body>
 </html>
